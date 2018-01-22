@@ -1,0 +1,37 @@
+{
+  "name": "sole-socket",
+  "version": "0.0.1",
+  "description": "A websocket manager for pheonix.js that guarantees one - and only one - websocket connection",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "npm run test -- --watch",
+    "build:package": "./node_modules/.bin/babel --presets es2015 -d lib/ src/",
+    "prepublishOnly": "npm run build:package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/herman-rogers/sole-socket.git"
+  },
+  "keywords": [
+    "pheonix.js",
+    "websockets",
+    "singleton"
+  ],
+  "author": "Boomer Rogers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/herman-rogers/sole-socket/issues"
+  },
+  "homepage": "https://github.com/herman-rogers/sole-socket#readme",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-jest": "^22.1.0",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^4.16.0",
+    "jest": "^22.1.4"
+  },
+  "dependencies": {
+    "babel-preset-es2015": "^6.24.1"
+  }
+}

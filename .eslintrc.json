@@ -1,0 +1,22 @@
+{
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "globals": {
+      "document": false,
+      "window": false,
+      "it": false,
+      "describe": false,
+      "expect": false,
+      "afterEach": false,
+      "beforeEach": false,
+      "fetch": false,
+      "jest": false,
+      "localStorage": false
+    },
+      "rules": {
+        "jsx-a11y/anchor-is-valid": [ "error", {
+            "components": [ "Link"  ],
+            "specialLink": [ "to"  ]
+      } ]
+    }
+  }
