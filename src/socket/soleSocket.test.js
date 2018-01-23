@@ -8,6 +8,11 @@ describe('SoleSocket class', () => {
   const params = { jwt: 'mockToken' };
   const url = 'mockUrl';
 
+  afterEach(() => {
+    SoleSocket.purgeInstance();
+    jest.restoreAllMocks();
+  });
+
   it('should allow setting the socket url', () => {
     const mockSoleSocket = new SoleSocket(url);
     const mockUrl = mockSoleSocket.socketData.url;
@@ -22,7 +27,7 @@ describe('SoleSocket class', () => {
     expect(mockParams).toEqual(params);
   });
 
-  it('should setup the socket for use', () => {
+  it('should initialize the socket instance and be connected', () => {
     websockets.Socket = MockSocket;
 
     const connectSpy = jest.spyOn(websockets.Socket.prototype, 'connect');
@@ -33,7 +38,22 @@ describe('SoleSocket class', () => {
       expect(SoleSocket.instance).not.toBeNull();
       expect(connectSpy).toHaveBeenCalled();
       expect(onOpenSpy).toHaveBeenCalled();
-      expect(success).toEqual('connected to socket');
+      expect(success).toEqual('open');
+    });
+  });
+
+  it('should prevent calling socket.connect twice if socket is connected', () => {
+    websockets.Socket = MockSocket;
+
+    const connectSpy = jest.spyOn(websockets.Socket.prototype, 'connect');
+    const mockSoleSocket = new SoleSocket(url, params);
+
+    return mockSoleSocket.initialize().then(() => {
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      return mockSoleSocket.initialize().then(() => {
+        expect(connectSpy).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

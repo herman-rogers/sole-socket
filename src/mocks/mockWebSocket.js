@@ -1,8 +1,8 @@
 export const MOCK_SOCKET_STATES = {
   connecting: 0,
-  error: 1,
-  connected: 2,
-  disconnected: 3,
+  open: 1,
+  closing: 2,
+  closed: 3,
 };
 
 export const MOCK_CHANNEL_STATES = {
@@ -89,48 +89,45 @@ export class MockChannel {
 
 export class MockSocket {
   constructor() {
-    this.testState = MOCK_SOCKET_STATES.connecting;
     this.mockChannel = null;
     this.connections = {
       open: [],
       error: [],
     };
     this.sendBuffer = [];
+    this.conn = '';
     this.triggerOnOpen = this.triggerOnOpen.bind(this);
-    this.triggerOnError = this.triggerOnError.bind(this);
-    this.setupTestState = this.setupTestState.bind(this);
     this.connect = this.connect.bind(this);
     this.onOpen = this.onOpen.bind(this);
     this.onError = this.onError.bind(this);
     this.channel = this.channel.bind(this);
   }
 
-  // Call this to setup the Mock State
-  // and fire corresponding actions
-  setupTestState(state) {
-    this.testState = state;
+
+  connect() {
+    setTimeout(() => this.triggerOnOpen(), 100);
+  }
+
+  connectionState() {
+    switch (this.conn) {
+      case MOCK_SOCKET_STATES.connecting:
+        return 'connecting';
+      case MOCK_SOCKET_STATES.open:
+        return 'open';
+      case MOCK_SOCKET_STATES.closing:
+        return 'closing';
+      default:
+        return 'closed';
+    }
+  }
+
+  isConnected() {
+    return this.connectionState() === 'open';
   }
 
   triggerOnOpen() {
+    this.conn = MOCK_SOCKET_STATES.open;
     this.connections.open.map(callback => callback());
-  }
-
-  triggerOnError() {
-    this.connections.error.map(callback => callback());
-  }
-
-  connect() {
-    setTimeout(() => {
-      switch (this.testState) {
-        case MOCK_SOCKET_STATES.connecting:
-          this.testState = MOCK_SOCKET_STATES.connected;
-          return this.triggerOnOpen();
-        case MOCK_SOCKET_STATES.error:
-          return this.triggerOnError();
-        default:
-          return this.triggerOnOpen();
-      }
-    }, 100);
   }
 
   onOpen(callback) {
@@ -142,7 +139,7 @@ export class MockSocket {
   }
 
   disconnect() {
-    this.testState = MOCK_SOCKET_STATES.disconnected;
+    this.conn = MOCK_SOCKET_STATES.closed;
   }
 
   channel(topic) {
@@ -158,13 +155,18 @@ export class MockSocket {
 export class MockSocketConnectionError extends MockSocket {
   constructor() {
     super();
-    this.testState = MOCK_SOCKET_STATES.error;
+    this.triggerOnError = this.triggerOnError.bind(this);
+  }
+
+  connect() {
+    setTimeout(() => {
+      this.triggerOnError();
+    }, 100);
+  }
+
+  triggerOnError() {
+    this.connections.error.map(callback => callback());
+    this.conn = MOCK_SOCKET_STATES.closed;
   }
 }
 
-export class MockSocketError extends MockSocket {
-  constructor() {
-    super();
-    throw new Error('Socket Failed to Create');
-  }
-}

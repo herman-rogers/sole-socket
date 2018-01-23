@@ -1,11 +1,6 @@
 import { Socket } from 'phoenix';
 import { w3cwebsocket } from 'websocket';
 
-const SOCKET_STATES = {
-  connectSuccess: 'connected to socket',
-  connectError: 'failed to connect to socket',
-};
-
 let socketInstance = null;
 
 export default class SoleSocket {
@@ -19,6 +14,11 @@ export default class SoleSocket {
 
   static instance() {
     return socketInstance;
+  }
+
+  // TODO: Disconnect from the channels and sockets
+  static purgeInstance() {
+    socketInstance = null;
   }
 
   setInstance() {
@@ -44,15 +44,19 @@ export default class SoleSocket {
 
   connectToSocket() {
     return new Promise((resolve, reject) => {
+      if (socketInstance.isConnected()) {
+        resolve(this.socketConnectState);
+        return;
+      }
       socketInstance.connect();
 
       socketInstance.onOpen(() => {
-        this.socketConnectState = SOCKET_STATES.connectSuccess;
+        this.socketConnectState = socketInstance.connectionState();
         resolve(this.socketConnectState);
       });
 
       socketInstance.onError(() => {
-        this.socketConnectState = SOCKET_STATES.connectError;
+        this.socketConnectState = socketInstance.connectionState();
         reject(this.socketConnectState);
       });
     });
