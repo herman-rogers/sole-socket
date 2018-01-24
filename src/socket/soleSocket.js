@@ -1,7 +1,8 @@
 import { Socket } from 'phoenix';
 import { w3cwebsocket } from 'websocket';
 
-let socketInstance = null;
+let soleSocketInstance = null;
+let socket = null;
 
 export default class SoleSocket {
   constructor(url, params) {
@@ -9,20 +10,36 @@ export default class SoleSocket {
       url,
       params,
     };
+    this.channels = [];
     this.socketConnectState = '';
   }
 
   static instance() {
-    return socketInstance;
+    return soleSocketInstance;
   }
 
-  // TODO: Disconnect from the channels and sockets
+  static socket() {
+    return socket;
+  }
+
   static purgeInstance() {
-    socketInstance = null;
+    if (socket) {
+      socket.disconnect();
+    }
+    soleSocketInstance = undefined;
+  }
+
+  static isSingleton() {
+    return socket && soleSocketInstance;
+  }
+
+  initialize() {
+    this.setInstance();
+    return this.connectToSocket();
   }
 
   setInstance() {
-    if (socketInstance !== null) {
+    if (SoleSocket.isSingleton()) {
       return;
     }
 
@@ -31,34 +48,57 @@ export default class SoleSocket {
       params,
     } = this.socketData;
 
-    socketInstance = new Socket(url, {
+    socket = new Socket(url, {
       transport: w3cwebsocket,
       params,
     });
-  }
 
-  initialize() {
-    this.setInstance();
-    return this.connectToSocket();
+    soleSocketInstance = this;
   }
 
   connectToSocket() {
     return new Promise((resolve, reject) => {
-      if (socketInstance.isConnected()) {
-        resolve(this.socketConnectState);
+      let { socketConnectState } = this;
+
+      if (socket.isConnected()) {
+        resolve(socketConnectState);
         return;
       }
-      socketInstance.connect();
+      socket.connect();
 
-      socketInstance.onOpen(() => {
-        this.socketConnectState = socketInstance.connectionState();
-        resolve(this.socketConnectState);
+      socket.onOpen(() => {
+        socketConnectState = socket.connectionState();
+        resolve(socketConnectState);
       });
 
-      socketInstance.onError(() => {
-        this.socketConnectState = socketInstance.connectionState();
-        reject(this.socketConnectState);
+      socket.onError(() => {
+        socketConnectState = socket.connectionState();
+        reject(socketConnectState);
       });
+    });
+  }
+
+  joinChannel(topic) {
+    return new Promise((resolve, reject) => {
+      if (!SoleSocket.isSingleton()) {
+        reject(new Error('Join channel was called before initialize.'));
+        return;
+      }
+      const { channels } = this;
+      const channel = socket.channel(topic);
+
+      channel.join()
+        .receive('ok', () => {
+          const newChannel = {
+            key: topic,
+            channel,
+          };
+          channels.push(newChannel);
+          resolve(channels);
+        })
+        .receive('error', (err) => {
+          reject(new Error(`failed to join channel ${topic}. Got ${err}`));
+        });
     });
   }
 }

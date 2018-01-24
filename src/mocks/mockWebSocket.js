@@ -1,3 +1,5 @@
+import Console from '../console/logger';
+
 export const MOCK_SOCKET_STATES = {
   connecting: 0,
   open: 1,
@@ -32,6 +34,9 @@ export class Push {
   }
 }
 
+export class MockErrorChannel {
+}
+
 export class MockChannel {
   constructor(topic, params, socket) {
     this.topic = topic;
@@ -50,6 +55,9 @@ export class MockChannel {
   }
 
   join() {
+    setTimeout(() => {
+      this.triggerJoinEvent('ok');
+    }, 100);
     return this.joinPush;
   }
 
@@ -67,13 +75,21 @@ export class MockChannel {
   // Call this to fire mock events from tests
   // pretending to be a server response
   triggerJoinEvent(event) {
+    if (!this.joinPush.recHooks || this.joinPush.recHooks.length <= 0) {
+      Console.warn('No join receive hooks found, are you testing a channel.join()?');
+      return;
+    }
     this.joinPush.recHooks.filter(hook => hook.status === event)
-      .map(hook => hook.callback());
+      .map(hook => hook.callback('mock event'));
   }
 
   // Call this from unit tests to mock
   // responses from a server.
   triggerPushEvent(event) {
+    if (!this.mockPushObject.recHooks || this.mockPushObject.recHooks.length <= 0) {
+      Console.warn('No push receive hooks found, are you testing a channel.push()?');
+      return;
+    }
     this.mockPushObject.recHooks.filter(hook => hook.status === event)
       .map(hook => hook.callback());
   }
@@ -102,7 +118,6 @@ export class MockSocket {
     this.onError = this.onError.bind(this);
     this.channel = this.channel.bind(this);
   }
-
 
   connect() {
     setTimeout(() => this.triggerOnOpen(), 100);
