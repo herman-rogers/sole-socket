@@ -5,6 +5,14 @@ import Console from '../console/logger';
 let soleSocketInstance = null;
 let socket = null;
 
+export function solesocket() {
+  return soleSocketInstance;
+}
+
+export function websocketSingleton() {
+  return socket;
+}
+
 export default class SoleSocket {
   constructor(url, params) {
     this.socketData = {
