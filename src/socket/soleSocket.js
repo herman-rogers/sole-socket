@@ -1,5 +1,6 @@
 import { Socket } from 'phoenix';
 import { w3cwebsocket } from 'websocket';
+import Console from '../console/logger';
 
 let soleSocketInstance = null;
 let socket = null;
@@ -10,7 +11,7 @@ export default class SoleSocket {
       url,
       params,
     };
-    this.channels = [];
+    this.channels = {};
     this.socketConnectState = '';
   }
 
@@ -22,11 +23,12 @@ export default class SoleSocket {
     return socket;
   }
 
-  static purgeInstance() {
+  static purge() {
     if (socket) {
       socket.disconnect();
     }
     soleSocketInstance = undefined;
+    socket = undefined;
   }
 
   static isSingleton() {
@@ -80,25 +82,64 @@ export default class SoleSocket {
 
   joinChannel(topic) {
     return new Promise((resolve, reject) => {
+      const { channels } = this;
+
       if (!SoleSocket.isSingleton()) {
         reject(new Error('Join channel was called before initialize.'));
         return;
       }
+
+      if (Object.prototype.hasOwnProperty.call(channels, topic)) {
+        resolve(channels);
+        return;
+      }
+      resolve(this.createNewChannel(topic));
+    });
+  }
+
+  createNewChannel(topic) {
+    return new Promise((resolve, reject) => {
       const { channels } = this;
       const channel = socket.channel(topic);
 
       channel.join()
         .receive('ok', () => {
-          const newChannel = {
-            key: topic,
-            channel,
-          };
-          channels.push(newChannel);
+          channels[topic] = channel;
           resolve(channels);
         })
-        .receive('error', (err) => {
+        .receive('errors', (err) => {
           reject(new Error(`failed to join channel ${topic}. Got ${err}`));
         });
     });
+  }
+
+  sendMessage(topic, event, data) {
+    return new Promise((resolve, reject) => {
+      const channel = this.channels[topic];
+
+      if (!channel) {
+        reject(new Error(`channel ${topic} does not exist, cannot push`));
+      }
+
+      channel.push(event, data)
+        .receive('ok', () => {
+          resolve('success');
+        })
+        .receive('error', () => {
+          reject(new Error('send message failed'));
+        });
+    });
+  }
+
+  leaveChannel(topic) {
+    const channel = this.channels[topic];
+
+    if (!channel) {
+      Console.warn(`channel ${topic} does not exist, cannot leave`);
+      return;
+    }
+
+    channel.leave();
+    delete this.channels[topic];
   }
 }

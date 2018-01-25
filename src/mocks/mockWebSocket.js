@@ -8,8 +8,11 @@ export const MOCK_SOCKET_STATES = {
 };
 
 export const MOCK_CHANNEL_STATES = {
-  ok: 0,
-  error: 1,
+  closed: 'closed',
+  errored: 'errored',
+  joined: 'joined',
+  joining: 'joining',
+  leaving: 'leaving',
 };
 
 export class Push {
@@ -39,13 +42,13 @@ export class MockErrorChannel {
 
 export class MockChannel {
   constructor(topic, params, socket) {
+    this.state = MOCK_CHANNEL_STATES.closed;
     this.topic = topic;
     this.params = params;
     this.socket = socket;
     this.bindings = [];
     this.joinPush = new Push();
     this.on = this.on.bind(this);
-    this.testState = MOCK_CHANNEL_STATES.ok;
     this.trigger = this.trigger.bind(this);
     this.triggerJoinEvent = this.triggerJoinEvent.bind(this);
     // Mock Push Events
@@ -56,6 +59,7 @@ export class MockChannel {
 
   join() {
     setTimeout(() => {
+      this.state = MOCK_CHANNEL_STATES.joined;
       this.triggerJoinEvent('ok');
     }, 100);
     return this.joinPush;
@@ -95,11 +99,18 @@ export class MockChannel {
   }
 
   push(event, payload) {
+    setTimeout(() => {
+      this.triggerPushEvent('ok');
+    }, 100);
     const pushEvent = new Push(this, event, payload);
     this.mockPushObject = pushEvent;
 
     this.mockPushObject.send();
     return this.mockPushObject;
+  }
+
+  leave() {
+    this.state = MOCK_CHANNEL_STATES.closed;
   }
 }
 

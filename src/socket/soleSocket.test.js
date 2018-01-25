@@ -1,5 +1,6 @@
 import * as websockets from 'phoenix';
 import SoleSocket from './soleSocket';
+import Console from '../console/logger';
 import {
   MockSocket,
   MockChannel,
@@ -10,7 +11,7 @@ describe('SoleSocket class', () => {
   const url = 'mockUrl';
 
   afterEach(() => {
-    SoleSocket.purgeInstance();
+    SoleSocket.purge();
     jest.restoreAllMocks();
   });
 
@@ -84,13 +85,12 @@ describe('SoleSocket class', () => {
     mockSoleSocket.initialize();
 
     return mockSoleSocket.joinChannel(topic).then((channelList) => {
-      const channelKeyValue = {
-        key: topic,
-        channel: SoleSocket.socket().mockChannel,
-      };
+      const expectedList = {};
+      expectedList[topic] = SoleSocket.socket().mockChannel;
+
       expect(channelSpy).toHaveBeenCalledTimes(1);
       expect(joinSpy).toHaveBeenCalledTimes(1);
-      expect(channelList).toEqual([channelKeyValue]);
+      expect(channelList).toEqual(expectedList);
     });
   });
 
@@ -113,9 +113,10 @@ describe('SoleSocket class', () => {
     const mockSoleSocket = new SoleSocket(url, params);
 
     return mockSoleSocket.initialize().then(() => {
-      SoleSocket.purgeInstance();
+      SoleSocket.purge();
 
       expect(SoleSocket.instance()).toBeUndefined();
+      expect(SoleSocket.socket()).toBeUndefined();
       expect(disconnectSpy).toHaveBeenCalledTimes(1);
     });
   });
@@ -133,13 +134,10 @@ describe('SoleSocket class', () => {
     return mockSoleSocket.joinChannel(firstTopic)
       .then(() => mockSoleSocket.joinChannel(secondTopic)
         .then((channelList) => {
-          const expectedList = [{
-            key: firstTopic,
-            channel: channelList[0].channel,
-          }, {
-            key: secondTopic,
-            channel: channelList[1].channel,
-          }];
+          const expectedList = {};
+          expectedList[firstTopic] = channelList[firstTopic];
+          expectedList[secondTopic] = channelList[secondTopic];
+
           expect(channelList).toEqual(expectedList);
           expect(joinSpy).toHaveBeenCalledTimes(2);
         }));
@@ -149,6 +147,7 @@ describe('SoleSocket class', () => {
     websockets.Socket = MockSocket;
     websockets.Channel = MockChannel;
 
+    const joinSpy = jest.spyOn(websockets.Channel.prototype, 'join');
     const topic = 'mock:channelone';
     const mockSoleSocket = new SoleSocket(url, params);
     mockSoleSocket.initialize();
@@ -156,8 +155,71 @@ describe('SoleSocket class', () => {
     return mockSoleSocket.joinChannel(topic)
       .then(() => mockSoleSocket.joinChannel(topic)
         .then((channelList) => {
-          console.log(channelList);
-          expect(channelList.length).toEqual(1);
+          expect(Object.keys(channelList).length).toEqual(1);
+          expect(joinSpy).toHaveBeenCalledTimes(1);
         }));
+  });
+
+  it('should allow you to send a message to a channel', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const pushSpy = jest.spyOn(websockets.Channel.prototype, 'push');
+    const topic = 'mock:channelone';
+    const data = { message: 'mock message' };
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+
+    return mockSoleSocket.joinChannel(topic)
+      .then(() => mockSoleSocket.sendMessage(topic, 'mock_event', data)
+        .then(() => {
+          expect(pushSpy).toHaveBeenCalledTimes(1);
+        }));
+  });
+
+  it('should fail to send a message if channel does not exist', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+
+    return mockSoleSocket.sendMessage('mock:topic', 'mock_event', {})
+      .catch((err) => {
+        expect(err.message).toEqual('channel mock:topic does not exist, cannot push');
+      });
+  });
+
+  it('should leave channels gracefully', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const joinSpy = jest.spyOn(websockets.Channel.prototype, 'join');
+    const topic = 'mock:channelone';
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+
+    return mockSoleSocket.joinChannel(topic)
+      .then(() => {
+        expect(joinSpy).toHaveBeenCalledTimes(1);
+        mockSoleSocket.leaveChannel(topic);
+
+        return mockSoleSocket.joinChannel(topic);
+      }).then((channelList) => {
+        expect(Object.keys(channelList).length).toEqual(1);
+        expect(joinSpy).toHaveBeenCalledTimes(2);
+      });
+  });
+
+  it('should fail to leave a channel if it does not exist', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const warnSpy = jest.spyOn(Console, 'warn');
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+
+    mockSoleSocket.leaveChannel('mock:topic');
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 });
