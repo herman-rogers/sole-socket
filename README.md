@@ -17,7 +17,7 @@ yarn add sole-socket
 And then you'll need to initialize the socket instance - preferably from your app's index file (or generally anytime before you need to utilize websockets).
 
 ```javascript
-import { SoleSocket } from 'sole-socket;
+import { SoleSocket } from 'sole-socket';
 
 const url = 'wss://my.socket.url/socket';
 
