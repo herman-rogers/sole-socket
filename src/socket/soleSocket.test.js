@@ -222,4 +222,50 @@ describe('SoleSocket class', () => {
     mockSoleSocket.leaveChannel('mock:topic');
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('should allow channel events to be subscribed to', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const eventSpy = jest.spyOn(websockets.Channel.prototype, 'on');
+    const topic = 'mock:channelone';
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+    let called = false;
+
+    return mockSoleSocket.joinChannel(topic)
+      .then((channels) => {
+        mockSoleSocket.subscribeToChannelEvent(topic, 'mock_event', () => {
+          called = true;
+        });
+        channels[topic].trigger('mock_event');
+
+        expect(eventSpy).toHaveBeenCalledTimes(1);
+        expect(called).toEqual(true);
+      });
+  });
+
+  it('should prevent the same channel event from being subscribed', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const eventSpy = jest.spyOn(websockets.Channel.prototype, 'on');
+    const topic = 'mock:channelone';
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+    let called = false;
+
+    return mockSoleSocket.joinChannel(topic)
+      .then((channels) => {
+        const callback = () => {
+          called = true;
+        };
+        mockSoleSocket.subscribeToChannelEvent(topic, 'mock_event', callback);
+        mockSoleSocket.subscribeToChannelEvent(topic, 'mock_event', callback);
+        channels[topic].trigger('mock_event');
+
+        expect(eventSpy).toHaveBeenCalledTimes(1);
+        expect(called).toEqual(true);
+      });
+  });
 });

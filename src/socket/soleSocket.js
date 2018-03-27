@@ -93,7 +93,7 @@ export default class SoleSocket {
       const { channels } = this;
 
       if (!SoleSocket.isSingleton()) {
-        reject(new Error('Join channel was called before initialize.'));
+        reject(new Error('Join channel was called before sole socket was initialized.'));
         return;
       }
 
@@ -119,6 +119,15 @@ export default class SoleSocket {
           reject(new Error(`failed to join channel ${topic}. Got ${err}`));
         });
     });
+  }
+
+  subscribeToChannelEvent(topic, event, callback) {
+    const { channels } = this;
+    const channel = channels[topic];
+    const eventExists = channel.bindings.filter(binding => binding.event === event);
+
+    if (eventExists.length > 0) return;
+    channel.on(event, callback);
   }
 
   sendMessage(topic, event, data) {
