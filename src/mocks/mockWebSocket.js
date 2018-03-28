@@ -89,18 +89,18 @@ export class MockChannel {
 
   // Call this from unit tests to mock
   // responses from a server.
-  triggerPushEvent(event) {
+  triggerPushEvent(event, data) {
     if (!this.mockPushObject.recHooks || this.mockPushObject.recHooks.length <= 0) {
       Console.warn('No push receive hooks found, are you testing a channel.push()?');
       return;
     }
     this.mockPushObject.recHooks.filter(hook => hook.status === event)
-      .map(hook => hook.callback());
+      .map(hook => hook.callback(data));
   }
 
   push(event, payload) {
     setTimeout(() => {
-      this.triggerPushEvent('ok');
+      this.triggerPushEvent('ok', payload);
     }, 100);
     const pushEvent = new Push(this, event, payload);
     this.mockPushObject = pushEvent;

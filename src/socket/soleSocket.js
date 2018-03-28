@@ -139,8 +139,8 @@ export default class SoleSocket {
       }
 
       channel.push(event, data)
-        .receive('ok', () => {
-          resolve('success');
+        .receive('ok', (response) => {
+          resolve(response);
         })
         .receive('error', () => {
           reject(new Error('send message failed'));

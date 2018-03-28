@@ -172,8 +172,9 @@ describe('SoleSocket class', () => {
 
     return mockSoleSocket.joinChannel(topic)
       .then(() => mockSoleSocket.sendMessage(topic, 'mock_event', data)
-        .then(() => {
+        .then((response) => {
           expect(pushSpy).toHaveBeenCalledTimes(1);
+          expect(response).toEqual(data);
         }));
   });
 
