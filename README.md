@@ -1,8 +1,8 @@
 # SoleSocket
 
-SoleSocket is a api wrapper for the pheonix.js websockets implementation. It's main purpose is to be a fool proof way to create a socket and manage multiple channels. SoleSocket guarantees on and only one socket will ever be established
+SoleSocket is a api wrapper for the pheonix.js websockets implementation. It's main purpose is to be a fool proof way to create a socket and manage multiple channels.
 
-It's main features are to guarantee only one socket will be established (to prevent echos), easy reference to the websocket instance, and the ability to keep track of multiple channels.
+It's main features are to guarantee only one socket will be established (to prevent echos), easy reconnection to a socket if it is lost (a difficult issue on mobile), and the ability to keep track of multiple channels easily.
 
 ## Getting started
 
@@ -124,6 +124,29 @@ Disconnects from the socket and removes the singleton reference. Completely rese
 ```javascript
 solesocket().purge();
 ```
+
+
+### Publishing Package
+
+To publish new versions of habitat first add you newest changes and increment the verison number inside of package.json.
+
+Once that is done, commit your changes to git and create a new tag. For example:
+
+```
+git add new_file.txt && git commit -m "Add new file"
+git tag 1.0.0
+git push origin 1.0.0
+git push origin master
+```
+
+After the tag is added to git you need to publish the package to npm by running
+
+```
+npm publish
+```
+
+This will automatically create a new build of the code and push directly to the npm package repository.
+
 
 License
 ----
