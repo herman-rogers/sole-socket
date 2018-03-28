@@ -51,7 +51,18 @@ websocketSingleton() // returns the created websocket instance
 
 ## API
 
-joinChannel()
+initialize()
+---
+
+Initializes a new socket singleton instance. Will not override previously created singleton and will attempt to connect / reconnect to the socket instance. If it's already connected it will return the socket's connection state. Returns a promise.
+
+```javascript
+const socket = new SoleSocket(socketUrl, { jwt: 'my_token' });
+
+socket.initialize();
+```
+
+joinChannel(topic)
 ---
 
 You can create a new channel by calling ```joinChannel``` with the initialize SoleSocket instance. The convinience here is that joinChannel() will automatically create a new channel instance and attempt to join it. If the channel already exists then the promise will resolve with a list of your current channels.
@@ -68,10 +79,25 @@ solesocket().joinChannel(topic).then((channels) => {
 });
 ```
 
-sendMessage()
+subscribeToChannelEvent(topic, event, callback)
 ---
 
-Sends a message to the specified channel. Returns a promise.
+Subscribes to an event on a specified channel. New events received will trigger a callback function.
+
+```javascript
+const topic = 'fake:topic';
+const event = 'fake_user_message';
+const callback = () => {console.log('Hello Event!')}
+
+solesocket().subscribeToChannelEvent(topic, event, callback);
+
+// On callback triggers 'Hello Event!'
+```
+
+sendMessage(topic, event, data)
+---
+
+Sends a message to the specified channel. Returns a promise with the data returned from socket.
 
 ```javascript
 const topic = 'fake:topic';
@@ -79,7 +105,7 @@ const topic = 'fake:topic';
 solesocket().sendMessage(topic, 'event', 'new message!');
 ```
 
-leaveChannel()
+leaveChannel(topic)
 ---
 
 Leaves a specified channel and removes it from the channels list.
