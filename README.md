@@ -126,7 +126,7 @@ solesocket().purge();
 ```
 
 
-### Publishing Package
+## Publishing Package
 
 To publish new versions of habitat first add you newest changes and increment the verison number inside of package.json.
 
