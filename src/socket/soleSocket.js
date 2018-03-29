@@ -121,30 +121,48 @@ export default class SoleSocket {
     });
   }
 
-  subscribeToChannelEvent(topic, event, callback) {
+  getChannel(topic) {
     const { channels } = this;
     const channel = channels[topic];
-    const eventExists = channel.bindings.filter(binding => binding.event === event);
+    const error = new Error(`Failed to get channel with topic ${topic}, it does not exist`);
 
-    if (eventExists.length > 0) return;
-    channel.on(event, callback);
+    if (!channel) {
+      throw (error);
+    }
+    return channel;
+  }
+
+  subscribeToChannelEvent(topic, event, callback) {
+    return new Promise((resolve, reject) => {
+      try {
+        const channel = this.getChannel(topic);
+        const eventExists = channel.bindings.filter(binding => binding.event === event);
+
+        if (eventExists.length > 0) return;
+        channel.on(event, callback);
+
+        resolve(`subscribed to ${event} successfully`);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   sendMessage(topic, event, data) {
     return new Promise((resolve, reject) => {
-      const channel = this.channels[topic];
+      try {
+        const channel = this.getChannel(topic);
 
-      if (!channel) {
-        reject(new Error(`channel ${topic} does not exist, cannot push`));
+        channel.push(event, data)
+          .receive('ok', (response) => {
+            resolve(response);
+          })
+          .receive('error', () => {
+            reject(new Error('send message failed'));
+          });
+      } catch (e) {
+        reject(e);
       }
-
-      channel.push(event, data)
-        .receive('ok', (response) => {
-          resolve(response);
-        })
-        .receive('error', () => {
-          reject(new Error('send message failed'));
-        });
     });
   }
 

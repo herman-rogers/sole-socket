@@ -102,7 +102,7 @@ describe('SoleSocket class', () => {
     mockSoleSocket.initialize();
 
     return mockSoleSocket.joinChannel('mock:channel').catch((err) => {
-      expect(err.message).toEqual('failed to join channel mock:channel. Got mock event');
+      expect(err.message).toEqual('Failed to get channel with topic mock:topic, it does not exist');
     });
   });
 
@@ -187,7 +187,7 @@ describe('SoleSocket class', () => {
 
     return mockSoleSocket.sendMessage('mock:topic', 'mock_event', {})
       .catch((err) => {
-        expect(err.message).toEqual('channel mock:topic does not exist, cannot push');
+        expect(err.message).toEqual('Failed to get channel with topic mock:topic, it does not exist');
       });
   });
 
@@ -267,6 +267,22 @@ describe('SoleSocket class', () => {
 
         expect(eventSpy).toHaveBeenCalledTimes(1);
         expect(called).toEqual(true);
+      });
+  });
+
+  it('should return an error if channel does not exist when being subscribed to', () => {
+    websockets.Socket = MockSocket;
+    websockets.Channel = MockChannel;
+
+    const eventSpy = jest.spyOn(websockets.Channel.prototype, 'on');
+    const mockSoleSocket = new SoleSocket(url, params);
+    mockSoleSocket.initialize();
+
+    return mockSoleSocket
+      .subscribeToChannelEvent('mock:null', 'mock_event', () => {})
+      .catch((e) => {
+        expect(e.message).toEqual('Failed to get channel with topic mock:null, it does not exist');
+        expect(eventSpy).toHaveBeenCalledTimes(0);
       });
   });
 });
