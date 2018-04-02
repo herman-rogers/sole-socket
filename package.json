@@ -1,6 +1,6 @@
 {
   "name": "sole-socket",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A websocket manager for pheonix.js that guarantees one - and only one - websocket connection",
   "main": "index.js",
   "scripts": {
